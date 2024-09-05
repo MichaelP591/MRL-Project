@@ -26,8 +26,7 @@ def verify_device() -> bool:
         return False
  
  
-def update_line(iterator):
-    servo = serialInst.readline()
+def update_line(iterator, servo):
     scan = next(iterator)
     offsets = np.array([(np.radians(meas[1]), meas[2]) for meas in scan])
     servoarray = np.array([[int(servo)]])
@@ -51,12 +50,12 @@ with open('points.csv', mode='w', newline='') as csvfile:
         lidar.start_motor()
     
         try:
-            iterator = lidar.iter_scans(max_buf_meas=500)
+            iterator = lidar.iter_scans(max_buf_meas=5000)
             while True:
-                if serialInst.readable():
-                    update_line(iterator)
-                else:
-                    print('No data from servo.')
+                servo = serialInst.readline()
+                update_line(iterator, servo)
+                lidar.stop()
+                lidar.clean_input()
     
         except KeyboardInterrupt:
             lidar.stop()

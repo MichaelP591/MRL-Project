@@ -11,9 +11,19 @@ ax = fig.add_subplot(111, projection='3d')
 def pol2cart(distance, theta, phi):
     theta = (2 * np.pi) - theta 
     phi = np.radians(phi)
-    x = distance * np.cos(theta) * np.sin(phi) 
-    y = distance * np.sin(theta) * np.sin(phi)
-    z = distance * np.cos(phi) 
+    x = distance * np.cos(theta)
+    y = distance * np.sin(theta)
+    distanceangle = np.array([x, y, 0, 1])
+    transformx = np.array([
+        [1, 0, 0, 0], 
+        [0, np.cos(phi), np.sin(phi), 0], 
+        [0, -1*np.sin(phi), np.cos(phi), 0], 
+        [0, 0, 0, 1]
+        ])
+    transformed = np.matmul(distanceangle, transformx)
+    x = transformed[0]
+    y = transformed[1]
+    z = transformed[2]
     return x, y, z
     
 
