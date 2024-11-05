@@ -5,19 +5,20 @@ from rplidar import RPLidar
 import csv
 import serial
 import pandas as pd
+from datetime import datetime
 
 #Serial Instance Variable
 serialInst = serial.Serial()
 
 #Set the baudrate and port for the code    
 serialInst.baudrate = 9600
-serialInst.port = 'COM3'
+serialInst.port = '/dev/tty.usbmodem11101'
 serialInst.open()
  
 #RPLidar baudrate and port
 BAUD_RATE: int = 115200
 TIMEOUT: int = 1
-DEVICE_PATH: str = 'COM4'
+DEVICE_PATH: str = '/dev/tty.usbserial-0001'
  
 def verify_device() -> bool:
     if path.exists(DEVICE_PATH):
@@ -42,24 +43,28 @@ with open('points.csv', mode='w', newline='') as csvfile:
     csv_writer.writerow(['num', 'angle', 'distance', 'servo'])    
     if __name__ == '__main__':
     
-        if not verify_device():
-            print(f'No device found: {DEVICE_PATH}')
-            exit(1)
+        if path.exists(DEVICE_PATH):
+ 
+            print(f'Found RPLidar on path: {DEVICE_PATH}')
     
-        lidar = RPLidar(port=DEVICE_PATH, baudrate=BAUD_RATE, timeout=TIMEOUT)
-        lidar.start_motor()
+            now = datetime.now()
+            dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
     
-        try:
-            iterator = lidar.iter_scans(max_buf_meas=5000)
-            while True:
-                servo = serialInst.readline()
-                update_line(iterator, servo)
-                lidar.stop()
-                lidar.clean_input()
+            print(f'Date and time: {dt_string}')
     
-        except KeyboardInterrupt:
+            lidar = RPLidar(port=DEVICE_PATH, baudrate=BAUD_RATE, timeout=TIMEOUT)
+    
+            info = lidar.get_info()
+            for key, value in info.items():
+                print(f'{key.capitalize()}: {value}')
+    
+            health = lidar.get_health()
+            print(f'Health: {health}')
+    
             lidar.stop()
             lidar.stop_motor()
             lidar.disconnect()
+    else:
+        print(f'No device found for: {DEVICE_PATH}')
     csvfile.close()
     serialInst.close()

@@ -3,29 +3,26 @@ from matplotlib.animation import FuncAnimation
 import pandas as pd
 import numpy as np
 import csv
-from mpl_toolkits.mplot3d import Axes3D
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
 def pol2cart(distance, theta, phi):
-    theta = (2 * np.pi) - theta 
-    phi = np.radians(phi)
-    x = distance * np.cos(theta)
-    y = distance * np.sin(theta)
-    distanceangle = np.array([x, y, 0, 1])
+    theta = (2 * np.pi) - float(theta) 
+    phi = np.radians(float(phi-90))
+    x = float(distance) * np.cos(theta)
+    y = float(distance) * np.sin(theta)
+    distanceangle = np.array([x, y, 0])
     transformx = np.array([
-        [1, 0, 0, 0], 
-        [0, np.cos(phi), np.sin(phi), 0], 
-        [0, -1*np.sin(phi), np.cos(phi), 0], 
-        [0, 0, 0, 1]
+        [1, 0, 0],
+        [0, np.cos(phi), -1*np.sin(phi)], 
+        [0, np.sin(phi), np.cos(phi)]
         ])
-    transformed = np.matmul(distanceangle, transformx)
+    transformed = np.matmul(transformx, distanceangle)
     x = transformed[0]
     y = transformed[1]
     z = transformed[2]
     return x, y, z
-    
 
 with open('points.csv', mode='r') as csvfile:
     data = pd.read_csv('points.csv', index_col=0)
@@ -41,7 +38,6 @@ with open('points.csv', mode='r') as csvfile:
             cart = pol2cart(distance[i], angle[i], zangle[i])           
             csv_writer.writerow([cart[0], cart[1], cart[2]])
 
-
 with open('points3d.csv', mode='r') as csvfile:
     data = pd.read_csv('points3d.csv', index_col=0)
 
@@ -51,12 +47,16 @@ def animate(i):
     y = data['y']
     z = data['z']
     plt.cla()
+    ax.scatter(0,0,0, s=50, color='r')
+    ax.set_xlabel(r'$x$', fontsize='large')
+    ax.set_ylabel(r'$y$', fontsize='large')
+    ax.set_zlabel(r'$z$', fontsize='large')
+    ax.set_xlim(-5000,5000)
+    ax.set_ylim(-5000,5000)
+    ax.set_zlim(-5000,5000)
     ax.scatter(x, y, z, s=1)
 
-
-ani = FuncAnimation(plt.gcf(), animate, interval=5, cache_frame_data=False)
-
-print(data)
+ani = FuncAnimation(plt.gcf(), animate, interval=50, cache_frame_data=False)
 
 plt.tight_layout()
 plt.show()
