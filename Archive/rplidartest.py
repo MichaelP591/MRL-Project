@@ -14,7 +14,7 @@ serialInst = serial.Serial()
 
 #Set the baudrate and port for the code    
 serialInst.baudrate = 9600
-serialInst.port = '/dev/tty.usbmodem11101'
+serialInst.port = '/dev/tty.usbmodem21101'
 serialInst.open()
  
 BAUD_RATE: int = 115200
@@ -49,6 +49,7 @@ def update_line(num, iterator, line):
         return line
     except Exception as e:
         print(e)
+        lidar.clean_input()
         
     
 with open('points.csv', mode='w', newline='') as csvfile:   

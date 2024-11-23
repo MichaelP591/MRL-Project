@@ -31,6 +31,8 @@ with open('points.csv', mode='r') as csvfile:
     angle = data['angle']    
     distance = data['distance']
     zangle = data['servo']
+    for servo in zangle:
+        servo = (4.286/3) * (servo - 33)
     with open('points3d.csv', mode='w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile, delimiter=',') 
         csv_writer.writerow(['x', 'y', 'z'])
@@ -51,9 +53,6 @@ def animate(i):
     ax.set_xlabel(r'$x$', fontsize='large')
     ax.set_ylabel(r'$y$', fontsize='large')
     ax.set_zlabel(r'$z$', fontsize='large')
-    ax.set_xlim(-5000,5000)
-    ax.set_ylim(-5000,5000)
-    ax.set_zlim(-5000,5000)
     ax.scatter(x, y, z, s=1)
 
 ani = FuncAnimation(plt.gcf(), animate, interval=50, cache_frame_data=False)
