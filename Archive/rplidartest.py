@@ -3,7 +3,7 @@ from sys import exit
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
-from rplidar import RPLidar
+from adafruit_rplidar import RPLidar
 import csv
 import serial 
 import pandas as pd
@@ -14,7 +14,7 @@ serialInst = serial.Serial()
 
 #Set the baudrate and port for the code    
 serialInst.baudrate = 9600
-serialInst.port = '/dev/tty.usbmodem21101'
+serialInst.port = '/dev/tty.usbmodem1101'
 serialInst.open()
  
 BAUD_RATE: int = 115200
@@ -44,12 +44,9 @@ def update_line(num, iterator, line):
         offsetservo = np.hstack((offsets, servoarray.T))
         df = pd.DataFrame(np.array(offsetservo))
         df.to_csv('points.csv', mode='a', index=True, header=[0,0,0])
-        lidar.clean_input()
-        print(lidar.get_health())
         return line
     except Exception as e:
         print(e)
-        lidar.clean_input()
         
     
 with open('points.csv', mode='w', newline='') as csvfile:   

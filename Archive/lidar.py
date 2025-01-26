@@ -13,13 +13,13 @@ serialInst = serial.Serial()
 
 #Set the baudrate and port for the code    
 serialInst.baudrate = 9600
-serialInst.port = '/dev/tty.usbmodem1101'
+serialInst.port = '/dev/tty.usbserial-0001'
 serialInst.open()
  
 BAUD_RATE: int = 115200
 TIMEOUT: int = 1
 
-DEVICE_PATH: str = '/dev/tty.usbserial-0001'
+DEVICE_PATH: str = '/dev/tty.usbmodem1101'
 
 D_MAX: int = 5000
 I_MIN: int = 0
