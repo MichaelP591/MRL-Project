@@ -7,56 +7,38 @@ import csv
 import numpy as np
 from scipy.spatial import cKDTree
 
+
+# Clean up any rows of the csv that do not work
+fn_in = 'rplidar_sdk/points.csv'
+fn_out = 'outfile.csv'
+
+with open(fn_in, 'r') as inp, open(fn_out, 'w') as out:
+    writer = csv.writer(out)
+    for row in csv.reader(inp):
+        if len(row)==6:
+            writer.writerow(row)
+
+
 # Take the raw lidar and servo data and convert it into 3d points
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
+# A function to use voxels for 
 def remove_redundant_points(points, tolerance=1e-3, voxel_size=0.1):
-    """
-    Removes near-duplicate 3D points and performs downsampling.
-    
-    Args:
-        points (np.ndarray): Nx3 array of 3D points.
-        tolerance (float): Minimum distance between distinct points.
-        voxel_size (float): Size of voxels for downsampling.
+    return
 
-    Returns:
-        np.ndarray: Filtered set of 3D points.
-    """
-    # Round points to the nearest voxel to downsample
-    voxel_grid = np.round(points / voxel_size) * voxel_size
-    unique_voxel_keys, unique_indices = np.unique(voxel_grid, axis=0, return_index=True)
-    
-    # Get unique points after voxel downsampling
-    filtered_points = points[unique_indices]
-
-    # Further refine by removing near-duplicates using a KD-Tree
-    tree = cKDTree(filtered_points)
-    keep_indices = []
-    visited = set()
-
-    for i, point in enumerate(filtered_points):
-        if i in visited:
-            continue
-        neighbors = tree.query_ball_point(point, tolerance)
-        keep_indices.append(i)
-        visited.update(neighbors)
-
-    return filtered_points[keep_indices]
-
-#All necessary functions
+# Convert the distance and theta points of the lidar into cartesian coordinates
 def polCart(theta, distance):
     if isinstance(theta, str):
         return 0, 0
-    # Convert the distance and theta points of the lidar into cartesian coordinates
     theta = (2 * np.pi) - np.radians(theta)
     x = float(distance) * cos(theta)
     y = float(distance) * sin(theta)
     return x, y, 0
 
+# Rotate the lidar about the x axis
 def rotateX(x, y, z, R_x):
     R_x = np.radians(float(R_x))
-    # Rotate the lidar about the x axis
     distanceangle = np.array([x, y, z])
 
     transformx = np.array([
@@ -68,9 +50,10 @@ def rotateX(x, y, z, R_x):
     transformed = np.dot(transformx, distanceangle)
     return round(transformed[0], 3), round(transformed[1], 3), round(transformed[2], 3)
 
+# Rotate the lidar about the y axis
 def rotateY(x, y, z, R_y):
     R_y = np.radians(float(R_y))
-    # Rotate the lidar about the y axis
+
     distanceangle = np.array([x, y, z])
 
     transformy = np.array([
@@ -82,9 +65,9 @@ def rotateY(x, y, z, R_y):
     transformed = np.dot(transformy, distanceangle)
     return round(transformed[0], 3), round(transformed[1], 3), round(transformed[2], 3)
 
-def rotateY(x, y, z, R_z):
+# Rotate the lidar about the z axis
+def rotateZ(x, y, z, R_z):
     R_z = np.radians(float(R_z))
-    # Rotate the lidar about the z axis
     distanceangle = np.array([x, y, z])
 
     transformy = np.array([
@@ -96,6 +79,7 @@ def rotateY(x, y, z, R_z):
     transformed = np.dot(transformy, distanceangle)
     return round(transformed[0], 3), round(transformed[1], 3), round(transformed[2], 3)
 
+#animation function
 def animate(i):
     data = pd.read_csv('points3d.csv', on_bad_lines='skip')
     x = data['x']    
@@ -127,18 +111,20 @@ with open('outfile.csv', mode='r') as csvfile:
                 rectCoords = polCart(angle[i], distance[i])
                 rectCoords = rotateX(rectCoords[0], rectCoords[1], rectCoords[2], R_x[i])
                 rectCoords = rotateY(rectCoords[0], rectCoords[1], rectCoords[2], R_y[i])
-                coordsArray = np.array
+                csv_writer.writerow(rectCoords)
             except Exception:
                 continue
     
-    df = pd.read_csv("points3d.csv")
-    points = df[['x', 'y', 'z']].values
-    filtered_points = remove_redundant_points(points)
+    #code for removing redundant points
+    #df = pd.read_csv("points3d.csv")
+    #points = df[['x', 'y', 'z']].values
+    #filtered_points = remove_redundant_points(points)
 
-    df_filtered = pd.DataFrame(filtered_points, columns=['X', 'Y', 'Z'])
-    df_filtered.to_csv('points3d.csv', index=False)
+    #df_filtered = pd.DataFrame(filtered_points, columns=['X', 'Y', 'Z'])
+    #df_filtered.to_csv('points3d.csv', index=False)
 
-ani = FuncAnimation(plt.gcf(), animate, interval=50, cache_frame_data=False)
+# old plotting function but not necessary any more due to cloud compare
 
-plt.tight_layout()
-plt.show()
+# ani = FuncAnimation(plt.gcf(), animate, interval=50, cache_frame_data=False)
+#plt.tight_layout()
+#plt.show()
