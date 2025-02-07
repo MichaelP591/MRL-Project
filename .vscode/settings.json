@@ -53,7 +53,8 @@
         "memory": "cpp",
         "print": "cpp",
         "queue": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "list": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }
