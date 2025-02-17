@@ -3,7 +3,8 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/rplidarcode/app/ultra_simple/sdk/include"
             ],
             "defines": [],
             "macFrameworkPath": [
