@@ -54,7 +54,12 @@
         "print": "cpp",
         "queue": "cpp",
         "stack": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "__tree": "cpp",
+        "charconv": "cpp",
+        "forward_list": "cpp",
+        "map": "cpp"
     },
-    "C_Cpp.errorSquiggles": "enabled"
+    "C_Cpp.errorSquiggles": "enabled",
+    "git.ignoreLimitWarning": true
 }
