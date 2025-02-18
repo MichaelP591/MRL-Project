@@ -1,3 +1,29 @@
+/*
+ *  SLAMTEC LIDAR
+ *  Ultra Simple Data Grabber Demo App
+ *
+ *  Copyright (c) 2009 - 2014 RoboPeak Team
+ *  http://www.robopeak.com
+ *  Copyright (c) 2014 - 2020 Shanghai Slamtec Co., Ltd.
+ *  http://www.slamtec.com
+ *
+ */
+/*
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -11,8 +37,9 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "/Users/mickelpickle/Documents/GitHub/MRL-Project/sdk/include/sl_lidar.h" 
-#include "/Users/mickelpickle/Documents/GitHub/MRL-Project/sdk/include/sl_lidar_driver.h"
+#include "sl_lidar.h" 
+#include "sl_lidar_driver.h"
+
 // Add at top of file
 #include <tuple>
 #include <mutex>
@@ -34,23 +61,33 @@ std::fstream fout;
 #define delay(x)   ::Sleep(x)
 #else
 #include <unistd.h>
-
 static inline void delay(sl_word_size_t ms){
     while (ms>=1000){
         usleep(1000*1000);
         ms-=1000;
-    }
+    };
     if (ms!=0)
         usleep(ms*1000);
 }
 #endif
 
 using namespace sl;
-using namespace std;
 
 void handle_timeout(int sig) {
-    cerr << "\nTimeout while attempting to open port." << endl;
+    std::cerr << "\nTimeout while attempting to open port." << std::endl;
     signal(sig, SIG_IGN);
+}
+
+void print_usage(int argc, const char * argv[])
+{
+    printf("Usage:\n"
+           " For serial channel\n %s --channel --serial <com port> [baudrate]\n"
+           " The baudrate used by different models is as follows:\n"
+           "  A1(115200),A2M7(256000),A2M8(115200),A2M12(256000),"
+           "A3(256000),S1(256000),S2(1000000),S3(1000000)\n"
+		   " For udp channel\n %s --channel --udp <ipaddr> [port NO.]\n"
+           " The T1 default ipaddr is 192.168.11.2,and the port NO.is 8089. Please refer to the datasheet for details.\n"
+           , argv[0], argv[0]);
 }
 
 bool checkSLAMTECLIDARHealth(ILidarDriver * drv)
@@ -64,7 +101,7 @@ bool checkSLAMTECLIDARHealth(ILidarDriver * drv)
         if (healthinfo.status == SL_LIDAR_STATUS_ERROR) {
             fprintf(stderr, "Error, slamtec lidar internal error detected. Please reboot the device to retry.\n");
             // enable the following code if you want slamtec lidar to be reboot by software
-            drv->reset();
+            // drv->reset();
             return false;
         } else {
             return true;
@@ -119,7 +156,6 @@ std::string getClosestIMUReading(int64_t lidar_timestamp) {
     std::string imu_values = std::get<1>(closest);
     imu_values.erase(std::remove(imu_values.begin(), imu_values.end(), '\n'), imu_values.end());
 
-    std::cout << "Closest IMU Reading: [" << std::get<1>(closest) << "]" << std::endl;
     return std::get<1>(closest);
 }
 
@@ -134,8 +170,7 @@ void writeLidarData(int angle, int distance) {
     fout << lidar_time_ms << "," << angle << "," << distance << "," << imu_reading << std::endl;
 }
 
-//main function
-int main() {
+int main(int argc, const char * argv[]) {
 	const char * opt_is_channel = NULL; 
 	const char * opt_channel = NULL;
     const char * opt_channel_param_first = NULL;
@@ -151,14 +186,60 @@ int main() {
     printf("Ultra simple LIDAR data grabber for SLAMTEC LIDAR.\n"
            "Version: %s\n", SL_LIDAR_SDK_VERSION);
 
-    std::string lidarSerialPort = "";
-    std::cout << "This program gathers data for Slamtech LIDAR and writes the data to points.csv" << "\n" 
-              << "Enter the serial port for the Slamtech LIDAR";
-    std::cin >> lidarSerialPort;
-    cout << "You entered: " << lidarSerialPort << endl;
+	 
+	if (argc>1)
+	{ 
+		opt_is_channel = argv[1];
+	}
+	else
+	{
+		print_usage(argc, argv);
+		return -1;
+	}
 
-    opt_channel_param_first = lidarSerialPort.c_str();
-    opt_channel_param_second = 115200;
+	if(strcmp(opt_is_channel, "--channel")==0){
+		opt_channel = argv[2];
+		if(strcmp(opt_channel, "-s")==0||strcmp(opt_channel, "--serial")==0)
+		{
+			// read serial port from the command line...
+			opt_channel_param_first = argv[3];// or set to a fixed value: e.g. "com3"
+			// read baud rate from the command line if specified...
+			if (argc>4) opt_channel_param_second = strtoul(argv[4], NULL, 10);	
+			useArgcBaudrate = true;
+		}
+		else if(strcmp(opt_channel, "-u")==0||strcmp(opt_channel, "--udp")==0)
+		{
+			// read ip addr from the command line...
+			opt_channel_param_first = argv[3];//or set to a fixed value: e.g. "192.168.11.2"
+			if (argc>4) opt_channel_param_second = strtoul(argv[4], NULL, 10);//e.g. "8089"
+			opt_channel_type = CHANNEL_TYPE_UDP;
+		}
+		else
+		{
+			print_usage(argc, argv);
+			return -1;
+		}
+	}
+	else
+	{
+		print_usage(argc, argv);
+        return -1;
+	}
+
+	if(opt_channel_type == CHANNEL_TYPE_SERIALPORT)
+	{
+		if (!opt_channel_param_first) {
+#ifdef _WIN32
+		// use default com port
+		opt_channel_param_first = "\\\\.\\com3";
+#elif __APPLE__
+		opt_channel_param_first = "/dev/tty.SLAB_USBtoUART";
+#else
+		opt_channel_param_first = "/dev/ttyUSB0";
+#endif
+		}
+	}
+
     
     // create the driver instance
 	ILidarDriver * drv = *createLidarDriver();
@@ -171,19 +252,59 @@ int main() {
     sl_lidar_response_device_info_t devinfo;
     bool connectSuccess = false;
 
-    _channel = (*createSerialPortChannel(opt_channel_param_first, opt_channel_param_second));
-    if (SL_IS_OK((drv)->connect(_channel))) {
-        op_result = drv->getDeviceInfo(devinfo);
+    if(opt_channel_type == CHANNEL_TYPE_SERIALPORT){
+        if(useArgcBaudrate){
+            _channel = (*createSerialPortChannel(opt_channel_param_first, opt_channel_param_second));
+            if (SL_IS_OK((drv)->connect(_channel))) {
+                op_result = drv->getDeviceInfo(devinfo);
 
-        if (SL_IS_OK(op_result)) 
-        {
-            connectSuccess = true;
+                if (SL_IS_OK(op_result)) 
+                {
+	                connectSuccess = true;
+                }
+                else{
+                    delete drv;
+					drv = NULL;
+                }
+            }
         }
         else{
-            delete drv;
-            drv = NULL;
+            size_t baudRateArraySize = (sizeof(baudrateArray))/ (sizeof(baudrateArray[0]));
+			for(size_t i = 0; i < baudRateArraySize; ++i)
+			{
+				_channel = (*createSerialPortChannel(opt_channel_param_first, baudrateArray[i]));
+                if (SL_IS_OK((drv)->connect(_channel))) {
+                    op_result = drv->getDeviceInfo(devinfo);
+
+                    if (SL_IS_OK(op_result)) 
+                    {
+	                    connectSuccess = true;
+                        break;
+                    }
+                    else{
+                        delete drv;
+					    drv = NULL;
+                    }
+                }
+			}
         }
     }
+    else if(opt_channel_type == CHANNEL_TYPE_UDP){
+        _channel = *createUdpChannel(opt_channel_param_first, opt_channel_param_second);
+        if (SL_IS_OK((drv)->connect(_channel))) {
+            op_result = drv->getDeviceInfo(devinfo);
+
+            if (SL_IS_OK(op_result)) 
+            {
+	            connectSuccess = true;
+            }
+            else{
+                delete drv;
+				drv = NULL;
+            }
+        }
+    }
+
 
     if (!connectSuccess) {
         (opt_channel_type == CHANNEL_TYPE_SERIALPORT)?
@@ -192,10 +313,11 @@ int main() {
 				, opt_channel_param_first));
 		
         if(drv) {
-        delete drv;
-        drv = NULL;
+            delete drv;
+            drv = NULL;
         }
         return 0;
+            
     }
 
     // print out the device serial number, firmware and hardware version number..
@@ -210,16 +332,19 @@ int main() {
             , devinfo.firmware_version>>8
             , devinfo.firmware_version & 0xFF
             , (int)devinfo.hardware_version);
-
-    // Set up serial port for Arduino
-    cout << "Enter the serial port for the Arduino and Baud Rate: ";
-    string port;
-    cin >> port;
+    
+            // Set up serial port for Arduino
+    std::cout << "Enter the serial port for the Arduino and Baud Rate: ";
+    std::string port;
+    std::cin >> port;
     int baudRate;
-    cin >> baudRate;
-    cout << "You entered: " << port << endl;
-    cout << "Attempting to open " << port << "..." << endl;
-
+    std::cin >> baudRate;
+    float runTime = 0;
+    std::cout << "How long do you want the program to run? (in seconds): " << std::endl;
+    std::cin >> runTime;
+    std::cout << "You entered: " << port << std::endl;
+    std::cout << "The program will run for: " << runTime << " seconds." << "\n";
+    std::cout << "Attempting to open " << port << "..." << std::endl;
     int fd;                             // File descriptor
     // Open port
     fd = open(port.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);
@@ -260,11 +385,12 @@ int main() {
 
     if (fd < 0)
         return 1;
+
     // check health...
     if (!checkSLAMTECLIDARHealth(drv)) {
         if(drv) {
-        delete drv;
-        drv = NULL;
+            delete drv;
+            drv = NULL;
         }
         return 0;
     }
@@ -276,8 +402,8 @@ int main() {
     // start scan...
     drv->startScan(0,1);
 
-    // Open file for writing
-    fout.open("points.csv", ios::out | ios::app);
+     // Open file for writing
+    fout.open("/Users/mickelpickle/Documents/GitHub/MRL-Project/rplidar_sdk/points.csv", std::ios::out | std::ios::app);
 
     if (!fout.is_open()) {
         fprintf(stderr, "Failed to open points.csv for writing");
@@ -286,8 +412,10 @@ int main() {
     fout << "timestamp,angle,distance,R_x,R_y,R_z" << "\n";
     fout.flush(); // Ensure header is written
 
-    // This is the main loop that runs the data collection
-    while (should_run) {
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    // fetech result and print it out...
+    while (1) {
         sl_lidar_response_measurement_node_hq_t nodes[8192];
         size_t count = _countof(nodes);
         hasNewData = false;
@@ -296,8 +424,8 @@ int main() {
         char buffer[100];
         int n = read(fd, buffer, sizeof(buffer));
         if (n > 0) {
-            lock_guard<std::mutex> lock(serial_mutex);
-            current_serial_data = string(buffer, n);
+            std::lock_guard<std::mutex> lock(serial_mutex);
+            current_serial_data = std::string(buffer, n);
             if (current_serial_data != lastSerialData) {
                 hasNewData = true;
                 lastSerialData = current_serial_data;
@@ -310,7 +438,17 @@ int main() {
         if (hasNewData) {
             if (SL_IS_OK(op_result)) {
                 drv->ascendScanData(nodes, count);
-                
+                auto now = std::chrono::high_resolution_clock::now();
+                // Compute the elapsed time in seconds
+                double elapsed_seconds = std::chrono::duration<double>(now - start).count();
+                if (elapsed_seconds >= runTime) {
+                    std::cout << "\nProgram completed after " << elapsed_seconds << " seconds" << std::endl;
+                    break; // Exit the loop after the specified time
+                }
+                // Display the elapsed time
+                std::cout << "Seconds since start: " << elapsed_seconds << "s\r";
+                std::cout.flush();
+
                 for (int pos = 0; pos < (int)count; ++pos) {
                     float angle = (nodes[pos].angle_z_q14 * 90.f) / 16384.f;
                     float distance = nodes[pos].dist_mm_q2 / 4.0f;
@@ -332,6 +470,7 @@ int main() {
         }
     }
 
+
     drv->stop();
     fout.close();
     close(fd);
@@ -339,5 +478,5 @@ int main() {
 	if(opt_channel_type == CHANNEL_TYPE_SERIALPORT)
         drv->setMotorSpeed(0);
     // done!
-
 }
+

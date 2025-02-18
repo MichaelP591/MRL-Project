@@ -5,14 +5,14 @@ import csv
 import numpy as np
 
 # Clean up any rows of the csv that do not work
-fn_in = 'points.csv'
+fn_in = '/Users/mickelpickle/Documents/GitHub/MRL-Project/rplidar_sdk/points.csv'
 fn_out = 'outfile.csv'
 
 with open(fn_in, 'r') as inp, open(fn_out, 'w') as out:
    writer = csv.writer(out)
    for row in csv.reader(inp):
-       if len(row)==6:
-           writer.writerow(row)
+        if len(row)==6:
+            writer.writerow(row)
 
 # Convert the distance and theta points of the lidar into cartesian coordinates
 def polCart(theta, distance):
