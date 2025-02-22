@@ -18,7 +18,7 @@ with open(fn_in, 'r') as inp, open(fn_out, 'w') as out:
 def polCart(theta, distance):
    if isinstance(theta, str):
        return 0, 0
-   theta = (2 * np.pi) - np.radians(theta + 180)
+   theta = (2 * np.pi) - np.radians(theta)
    x = float(distance) * cos(theta)
    y = float(distance) * sin(theta)
    return x, y, 0
