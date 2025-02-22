@@ -19,7 +19,11 @@ def voxelize_point_cloud(csv_file, voxel_size):
     
     # Create new filename with voxel size
     base_name = csv_file.rsplit('.', 1)[0]  # Remove extension
-    new_file = f"{base_name}-voxelized-{voxel_size}.csv"
+    header = csv_file.rsplit('points3d_')[0]
+    base_name = csv_file.rsplit('points3d_')[1]
+    print(header)
+    
+    new_file = f"/Users/mickelpickle/Documents/GitHub/MRL-Project/CSVFiles/voxelized_data/voxel3d_{base_name}"
     
     # Save to new file instead of overwriting
     pd.DataFrame(voxel_centers, columns=["x", "y", "z"]).to_csv(new_file, index=False, header=False)
@@ -27,6 +31,7 @@ def voxelize_point_cloud(csv_file, voxel_size):
     return len(unique_voxels), new_file
 
 def main():
+    
     parser = argparse.ArgumentParser(description='Voxelize the point cloud from a CSV file')
     parser.add_argument('csv_file', type=str, help='Path to the input CSV file')
     parser.add_argument('--voxel-size', type=float, default=0.1, help='Size of each voxel (default: 0.1)')

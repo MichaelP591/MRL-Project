@@ -39,6 +39,7 @@
 #include <netinet/in.h>
 #include "sl_lidar.h" 
 #include "sl_lidar_driver.h"
+#include <sstream>
 
 // Add at top of file
 #include <tuple>
@@ -343,7 +344,9 @@ int main(int argc, const char * argv[]) {
     std::cout << "How long do you want the program to run? (in seconds): " << std::endl;
     std::cin >> runTime;
     std::cout << "You entered: " << port << std::endl;
-    std::cout << "The program will run for: " << runTime << " seconds." << "\n";
+    std::cout << "The program will run for: " << runTime << " seconds." << " Please enter a room name: "<< "\n";
+    std::string roomName;
+    std::cin >> roomName;
     std::cout << "Attempting to open " << port << "..." << std::endl;
     int fd;                             // File descriptor
     // Open port
@@ -402,8 +405,11 @@ int main(int argc, const char * argv[]) {
     // start scan...
     drv->startScan(0,1);
 
-     // Open file for writing
-    fout.open("/Users/mickelpickle/Documents/GitHub/MRL-Project/rplidar_sdk/points.csv", std::ios::out | std::ios::app);
+    std::cout << "Opening new CSV File..." << "\n";
+    std::ostringstream file_name;
+    file_name << "/Users/mickelpickle/Documents/GitHub/MRL-Project/CSVFiles/rawdata/points_"
+        << static_cast<int>(runTime) << "s_" << roomName << "_.csv";     // Open file for writing
+    fout.open(file_name.str(), std::ios::out | std::ios::app);
 
     if (!fout.is_open()) {
         fprintf(stderr, "Failed to open points.csv for writing");
@@ -413,7 +419,6 @@ int main(int argc, const char * argv[]) {
     fout.flush(); // Ensure header is written
 
     auto start = std::chrono::high_resolution_clock::now();
-    
     // fetech result and print it out...
     while (1) {
         sl_lidar_response_measurement_node_hq_t nodes[8192];
@@ -438,16 +443,49 @@ int main(int argc, const char * argv[]) {
         if (hasNewData) {
             if (SL_IS_OK(op_result)) {
                 drv->ascendScanData(nodes, count);
+
                 auto now = std::chrono::high_resolution_clock::now();
                 // Compute the elapsed time in seconds
                 double elapsed_seconds = std::chrono::duration<double>(now - start).count();
-                if (elapsed_seconds >= runTime) {
-                    std::cout << "\nProgram completed after " << elapsed_seconds << " seconds" << std::endl;
-                    break; // Exit the loop after the specified time
-                }
+
                 // Display the elapsed time
                 std::cout << "Seconds since start: " << elapsed_seconds << "s\r";
                 std::cout.flush();
+
+                if (elapsed_seconds >= runTime) {
+                    std::cout << "\nProgram completed after " << elapsed_seconds << " seconds" << std::endl;
+                    std::cout << "Do you want to run a new scan? (y/n): ";
+                    char response;
+                    std::cin >> response;
+
+                    if (response == 'y' || response == 'Y') {
+                        std::cout << "Starting a new scan..." << std::endl;
+                        fout.close();
+
+                        // Reset the timer
+                        start = std::chrono::high_resolution_clock::now();
+                        // Reset the file name
+                        std::ostringstream file_name;
+                        std::cout << "Enter the time for the new scan: ";
+                        std::cin >> runTime;
+                        file_name << "/Users/mickelpickle/Documents/GitHub/MRL-Project/CSVFiles/rawdata/points_"
+                            << static_cast<int>(runTime) << "s_" << roomName << "_.csv";     // Open file for writing
+                        start = std::chrono::high_resolution_clock::now(); // Reset the timer
+                        fout.open(file_name.str(), std::ios::out | std::ios::app);
+                        if (!fout.is_open()) {
+                            fprintf(stderr, "Failed to open points.csv for writing");
+                            return -1;
+                        }
+                        fout << "timestamp,angle,distance,R_x,R_y,R_z" << "\n";
+                        fout.flush(); // Ensure header is written
+
+                        elapsed_seconds = std::chrono::duration<double>(now - start).count();
+
+                        continue; // Restart the loop
+                    } else {
+                        break; // Exit the loop
+                    }
+                }
 
                 for (int pos = 0; pos < (int)count; ++pos) {
                     float angle = (nodes[pos].angle_z_q14 * 90.f) / 16384.f;

@@ -3,16 +3,31 @@ import numpy as np
 from numpy import sin, cos
 import csv
 import numpy as np
+import time
+
+print("What file do you want to process?")
+points = input()
+
+for i in range(len(points)):
+    if points[i:i+7] == 'points_':
+        file_name = points[i:]
+        break
+
+file_path = '/Users/mickelpickle/Documents/GitHub/MRL-Project/CSVFiles/processed_data' 
+file_name = f"{file_path}/points3d_{file_name[7:]}"
 
 # Clean up any rows of the csv that do not work
-fn_in = '/Users/mickelpickle/Documents/GitHub/MRL-Project/rplidar_sdk/points.csv'
+fn_in = points
 fn_out = 'outfile.csv'
 
-with open(fn_in, 'r') as inp, open(fn_out, 'w') as out:
-   writer = csv.writer(out)
-   for row in csv.reader(inp):
-        if len(row)==6:
-            writer.writerow(row)
+with open(fn_in, 'r', errors='ignore') as inp, open(fn_out, 'w') as out:
+    writer = csv.writer(out)
+    for row in csv.reader(inp):
+        try: 
+            if len(row)==6:
+                writer.writerow(row)
+        except Exception as e:
+            continue
 
 # Convert the distance and theta points of the lidar into cartesian coordinates
 def polCart(theta, distance):
@@ -64,23 +79,25 @@ def rotateZ(x, y, z, R_z):
 
 #main
 with open('outfile.csv', mode='r') as csvfile:
-   data = pd.read_csv('outfile.csv', index_col=0)
-   data = pd.read_csv('outfile.csv')
+    data = pd.read_csv('outfile.csv', index_col=0)
+    data = pd.read_csv('outfile.csv')
 
-   angle = data['angle']  
-   distance = data['distance']
-   R_x = data['R_x']
-   R_y = data['R_y']
+    angle = data['angle']  
+    distance = data['distance']
+    R_x = data['R_x']
+    R_y = data['R_y']
+    R_z = data['R_z']
+    
+    with open(file_name, mode='w', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile, delimiter=',')
+        csv_writer.writerow(['x', 'y', 'z'])
 
-   with open('points3d.csv', mode='w', newline='') as csvfile:
-       csv_writer = csv.writer(csvfile, delimiter=',')
-       csv_writer.writerow(['x', 'y', 'z'])
-
-       for i in range(len(angle)):
-           try:
+        for i in range(len(angle)):
+            try:
                rectCoords = polCart(angle[i], distance[i])
                rectCoords = rotateX(rectCoords[0], rectCoords[1], rectCoords[2], R_x[i])
                rectCoords = rotateY(rectCoords[0], rectCoords[1], rectCoords[2], R_y[i])
+               #rectCoords = rotateZ(rectCoords[0], rectCoords[1], rectCoords[2], R_z[i])
                csv_writer.writerow(rectCoords)
-           except Exception:
+            except Exception:
                continue
