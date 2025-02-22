@@ -4,8 +4,7 @@ import argparse
 
 def voxelize_point_cloud(csv_file, voxel_size):
     # Read point cloud data from CSV
-    df = pd.read_csv(csv_file, names=["x", "y", "z"])
-    
+df = pd.read_csv(csv_file, header=0, dtype=float)    
     # Compute voxel indices
     voxel_indices = np.floor(df / voxel_size).astype(int)
     
