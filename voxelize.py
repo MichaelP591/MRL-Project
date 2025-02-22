@@ -4,17 +4,20 @@ import argparse
 
 def voxelize_point_cloud(csv_file, voxel_size):
     # Read point cloud data from CSV
-df = pd.read_csv(csv_file, header=0, dtype=float)    
-    # Compute voxel indices
+    #this might work
+    df = pd.read_csv(csv_file, header=0)  # Read CSV
+    df = df.apply(pd.to_numeric, errors='coerce')  # Convert all to numbers, force non-numbers to NaN
+    df = df.dropna()  # Remove any rows with NaN values
+    
     voxel_indices = np.floor(df / voxel_size).astype(int)
     
-    # Remove duplicate voxel indices
+    # remove duplicate voxel index
     unique_voxels = np.array(list(set(map(tuple, voxel_indices.values))))
     
-    # Convert back to real-world coordinates (voxel center)
+    # convert back to coordinates
     voxel_centers = (unique_voxels + 0.5) * voxel_size
     
-    # Overwrite the CSV file with voxelized data
+    # overwrite the CSV  
     pd.DataFrame(voxel_centers, columns=["x", "y", "z"]).to_csv(csv_file, index=False, header=False)
     
     return len(unique_voxels)
