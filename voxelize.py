@@ -17,10 +17,14 @@ def voxelize_point_cloud(csv_file, voxel_size):
     # convert back to coordinates
     voxel_centers = (unique_voxels + 0.5) * voxel_size
     
-    # overwrite the CSV  
-    pd.DataFrame(voxel_centers, columns=["x", "y", "z"]).to_csv(csv_file, index=False, header=False)
+    # Create new filename with voxel size
+    base_name = csv_file.rsplit('.', 1)[0]  # Remove extension
+    new_file = f"{base_name}-voxelized-{voxel_size}.csv"
     
-    return len(unique_voxels)
+    # Save to new file instead of overwriting
+    pd.DataFrame(voxel_centers, columns=["x", "y", "z"]).to_csv(new_file, index=False, header=False)
+    
+    return len(unique_voxels), new_file
 
 def main():
     parser = argparse.ArgumentParser(description='Voxelize the point cloud from a CSV file')
@@ -30,8 +34,9 @@ def main():
     args = parser.parse_args()
     
     try:
-        num_voxels = voxelize_point_cloud(args.csv_file, args.voxel_size)
-        print(f"Voxelized point cloud contains {num_voxels} unique voxels. The file has been updated.")
+        num_voxels, output_file = voxelize_point_cloud(args.csv_file, args.voxel_size)
+        print(f"Voxelized point cloud contains {num_voxels} unique voxels.")
+        print(f"Results saved to: {output_file}")
     except FileNotFoundError:
         print(f"Error: Could not find file '{args.csv_file}'")
     except Exception as e:
