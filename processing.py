@@ -3,18 +3,16 @@ import numpy as np
 from numpy import sin, cos
 import csv
 import numpy as np
-import time
+import argparse
 
 print("What file do you want to process?")
 points = input()
 
-for i in range(len(points)):
-    if points[i:i+7] == 'points_':
-        file_name = points[i:]
-        break
+file_name = points.rsplit('points_')[1]
+file_name = file_name.rsplit('.csv')[0]
 
 file_path = '/Users/mickelpickle/Documents/GitHub/MRL-Project/CSVFiles/processed_data' 
-file_name = f"{file_path}/points3d_{file_name[7:]}"
+file_name = f"{file_path}/points3d_{file_name}.txt"
 
 # Clean up any rows of the csv that do not work
 fn_in = points
@@ -88,16 +86,60 @@ with open('outfile.csv', mode='r') as csvfile:
     R_y = data['R_y']
     R_z = data['R_z']
     
-    with open(file_name, mode='w', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile, delimiter=',')
-        csv_writer.writerow(['x', 'y', 'z'])
-
+    with open(file_name, mode='w') as csvfile:
         for i in range(len(angle)):
             try:
-               rectCoords = polCart(angle[i], distance[i])
-               rectCoords = rotateX(rectCoords[0], rectCoords[1], rectCoords[2], R_x[i])
-               rectCoords = rotateY(rectCoords[0], rectCoords[1], rectCoords[2], R_y[i])
-               #rectCoords = rotateZ(rectCoords[0], rectCoords[1], rectCoords[2], R_z[i])
-               csv_writer.writerow(rectCoords)
+                rectCoords = polCart(angle[i], distance[i])
+                rectCoords = rotateX(rectCoords[0], rectCoords[1], rectCoords[2], R_x[i])
+                rectCoords = rotateY(rectCoords[0], rectCoords[1], rectCoords[2], R_y[i])
+
+                coord_line = f"{rectCoords[0]} {rectCoords[1]} {rectCoords[2]}\n"
+                csvfile.write(coord_line)
             except Exception:
-               continue
+                continue
+            
+def voxelize_point_cloud(csv_file, voxel_size):
+    # Read point cloud data from CSV
+    #this might work
+    df = pd.read_csv(csv_file, header=0)  # Read CSV
+    df = df.apply(pd.to_numeric, errors='coerce')  # Convert all to numbers, force non-numbers to NaN
+    df = df.dropna()  # Remove any rows with NaN values
+    
+    voxel_indices = np.floor(df / voxel_size).astype(int)
+    
+    # remove duplicate voxel index
+    unique_voxels = np.array(list(set(map(tuple, voxel_indices.values))))
+    
+    # convert back to coordinates
+    voxel_centers = (unique_voxels + 0.5) * voxel_size
+    
+    # Create new filename with voxel size
+    base_name = csv_file.rsplit('.', 1)[0]  # Remove extension
+    base_name = base_name.rsplit('points3d_')[1]
+    
+    new_file = f"/Users/mickelpickle/Documents/GitHub/MRL-Project/CSVFiles/voxelized_data/voxel3d_{base_name}.txt"
+    
+    # Save to new file instead of overwriting
+    pd.DataFrame(voxel_centers, columns=["x", "y", "z"]).to_csv(new_file, index=False, header=False, sep=' ')
+    
+    return len(unique_voxels), new_file
+
+def main():
+    
+    parser = argparse.ArgumentParser(description='Voxelize the point cloud from a CSV file')
+    parser.add_argument('csv_file', type=str, help='Path to the input CSV file')
+    parser.add_argument('--voxel-size', type=float, default=0.1, help='Size of each voxel (default: 0.1)')
+    
+    args = parser.parse_args()
+    
+    try:
+        num_voxels, output_file = voxelize_point_cloud(args.csv_file, args.voxel_size)
+        print(f"Voxelized point cloud contains {num_voxels} unique voxels.")
+        print(f"Results saved to: {output_file}")
+    except FileNotFoundError:
+        print(f"Error: Could not find file '{args.csv_file}'")
+    except Exception as e:
+        print(f"Error: {str(e)}")
+
+if __name__ == '__main__':
+    main()  
