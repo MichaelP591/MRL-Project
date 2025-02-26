@@ -6,7 +6,7 @@ import numpy as np
 import os
 
 print("Enter a folder to process: ")
-folder_path = input()  
+folder_path = input()
 
 # Convert the distance and theta points of the lidar into cartesian coordinates
 def polCart(theta, distance):
@@ -149,6 +149,3 @@ for file in os.listdir(folder_path):
         print(f"Error: Could not find file '{csvfile}'")
     except Exception as e:
         print(f"Error: {str(e)}")
-    
-    
-    
