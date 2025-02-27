@@ -13,8 +13,8 @@ def polCart(theta, distance):
    if isinstance(theta, str):
        return 0, 0
    theta = (2 * np.pi) - np.radians(theta + 180)
-   x = float(distance) * cos(theta)
-   y = float(distance) * sin(theta)
+   x = float(distance) * cos(theta) / 1000
+   y = float(distance) * sin(theta) / 1000
    return x, y, 0
 
 # Rotate the lidar about the x axis
@@ -142,7 +142,7 @@ for file in os.listdir(folder_path):
                     continue
 
     try:
-        num_voxels, output_file = voxelize_point_cloud(file_name, 25)
+        num_voxels, output_file = voxelize_point_cloud(file_name, 0.025)
         print(f"Voxelized point cloud contains {num_voxels} unique voxels.")
         print(f"Results saved to: {output_file}")
     except FileNotFoundError:
