@@ -29,7 +29,8 @@ for file in os.listdir(folder_path):
                            skiprows=1)     # Skip header row
             
             # Select specific columns regardless of their position
-            required_columns = ['X', 'Y', 'Z', 'R', 'G', 'B', 'Nx', 'Ny', 'Nz']
+            #required_columns = ['X', 'Y', 'Z', 'R', 'G', 'B', 'Nx', 'Ny', 'Nz']
+            required_columns = ['X', 'Y', 'Z', 'R', 'G', 'B']
             df_selected = df[required_columns]
             
             # Write to new file
