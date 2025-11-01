@@ -85,9 +85,6 @@ def voxelize_point_cloud(csv_file, voxel_size):
             f.write(f"{point[0]:.3f} {point[1]:.3f} {point[2]:.3f} 0 0 0\n")
     
     return len(unique_voxels), new_file
-    
-    return len(unique_voxels), new_file
-
 
 # List all files in the folder
 for file in os.listdir(folder_path):
@@ -109,14 +106,14 @@ for file in os.listdir(folder_path):
     fn_in = points
     fn_out = 'outfile.csv'
 
-    with open(fn_in, 'r', errors='ignore') as inp, open(fn_out, 'w') as out:
-        writer = csv.writer(out)
-        for row in csv.reader(inp):
-            try: 
-                if len(row)==6:
-                    writer.writerow(row)
-            except Exception as e:
-                continue
+    # with open(fn_in, 'r', errors='ignore') as inp, open(fn_out, 'w') as out:
+    #     writer = csv.writer(out)
+    #     for row in csv.reader(inp):
+    #         try: 
+    #             if len(row)==5:
+    #                 writer.writerow(row)
+    #         except Exception as e:
+    #             continue
     
     #main
     with open('outfile.csv', mode='r') as csvfile:

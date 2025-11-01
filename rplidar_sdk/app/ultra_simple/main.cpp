@@ -155,11 +155,10 @@ std::string getClosestIMUReading(int64_t lidar_timestamp) {
         }
     }
     std::string imu_values = std::get<1>(closest);
-    imu_values.erase(std::remove(imu_values.begin(), imu_values.end(), '\n'), imu_values.end());
+    imu_values = imu_values.substr(0, imu_values.find('\n'));
 
-    return std::get<1>(closest);
+    return imu_values;
 }
-
 
 void writeLidarData(int angle, int distance) {
     
@@ -168,7 +167,7 @@ void writeLidarData(int angle, int distance) {
 
     std::string imu_reading = getClosestIMUReading(lidar_time_ms);
     
-    fout << lidar_time_ms << "," << angle << "," << distance << "," << imu_reading << std::endl;
+    fout << angle << "," << distance << "," << imu_reading << std::endl;
 }
 
 int main(int argc, const char * argv[]) {
@@ -476,7 +475,7 @@ int main(int argc, const char * argv[]) {
                             fprintf(stderr, "Failed to open points.csv for writing");
                             return -1;
                         }
-                        fout << "timestamp,angle,distance,R_x,R_y,R_z" << "\n";
+                        fout << "angle,distance,R_x,R_y,R_z" << "\n";
                         fout.flush(); // Ensure header is written
 
                         elapsed_seconds = std::chrono::duration<double>(now - start).count();
